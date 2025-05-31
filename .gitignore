@@ -1,3 +1,6 @@
 node_modules/
 .env
 venv
+
+classifiers/random_forest/__pycache__
+classifiers/random_forest/run*
