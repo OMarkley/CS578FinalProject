@@ -14,7 +14,7 @@ def process_email_file(filepath, limit=100000):
 
     # Prepare output file path
     directory = os.path.dirname(filepath)
-    output_path = os.path.join(directory, "phishing-2024_plaintext_output.txt")
+    output_path = os.path.join(directory, "../raw_data/phishing-2024_plaintext_output.txt")
 
     # Split on the start of each email (but keep the split string)
     raw_emails = raw_data.split(b'\nFrom jose@monkey.org')
@@ -48,4 +48,4 @@ def process_email_file(filepath, limit=100000):
     print(f"Wrote {count} email(s) to: {output_path}")
 
 # Run the parser
-process_email_file("data/datasets/phishing-2024.txt")
+process_email_file("data/raw_data/phishing-2024.txt")
