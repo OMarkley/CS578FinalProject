@@ -1,8 +1,6 @@
-### evaluate.py
-
 import pandas as pd
 from sklearn.metrics import accuracy_score, classification_report
-from config import RESULTS_PATH, SAVE_OUTPUT
+from config import RESULTS_PATH
 import os
 
 def evaluate_model(model, x_test_vec, y_test, x_test, df):
@@ -22,8 +20,8 @@ def evaluate_model(model, x_test_vec, y_test, x_test, df):
 
     return results_df
 
-def save_and_report(results_df):
-    if SAVE_OUTPUT:
+def save_and_report(results_df, save_output=False):
+    if save_output:
         os.makedirs(os.path.dirname(RESULTS_PATH), exist_ok=True)
         results_df.to_csv(RESULTS_PATH, index=False)
         print(f"\nSaved predictions to '{RESULTS_PATH}'")
