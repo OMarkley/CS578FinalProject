@@ -10,7 +10,7 @@ def load_phishing_emails_as_dataframe(filepath):
 
     df = pd.DataFrame({
         "text": emails,
-        "label": 1,
+        "label": 0,
         "group": "modern_phishing"  # updated group name
     })
     return df

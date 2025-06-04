@@ -1,83 +1,115 @@
-Datasets
+# Random Forest Spam/Phishing Classifier
 
-Training: huggingface talby/spamassassin
-Testing (Phishing): Jose Monkey https://monkey.org/~jose/phishing/
-- Extraction code from https://github.com/liakoyras/thesis-phishing-email-detection/blob/main/Import%20Text%20Data.ipynb
-
-# 📧 Spam Classifier (Random Forest + TF-IDF/Word2Vec)
-
-This project classifies email messages as **Spam** or **Not Spam** using a trained Random Forest model. The pipeline supports both training/testing on labeled datasets and batch predictions on unlabeled email text extracted from `.mbox`-style archives.
+This project implements a spam and phishing email classifier using a Random Forest model. It supports TF-IDF and Word2Vec vectorization and allows fine-grained control over which dataset groups are used for training, evaluation, or both.
 
 ---
 
-## 🔧 Configuration (`config.py`)
+## 📦 Directory Structure
 
-| Variable                         | Description                                                                       |
-| -------------------------------- | --------------------------------------------------------------------------------- |
-| `VECTORIZER_TYPE`                | `"tfidf"` or `"word2vec"` – determines which text vectorization method to use.    |
-| `EXCLUDE_HARD_HAM_FROM_TRAINING` | If `True`, excludes `hard_ham` from the training set and adds it to the test set. |
-| `SAVE_OUTPUT`                    | If `True`, prediction results will be saved to a timestamped CSV.                 |
-| `MODEL_PATH` / `VECTORIZER_PATH` | Where the trained model/vectorizer are saved. Automatically updated each run.     |
-| `RESULTS_PATH`                   | Location of the saved predictions file. Also updated each run.                    |
+```
+project-root/
+├── main.py
+├── config.py
+├── model.py
+├── vectorize.py
+├── preprocess.py
+├── evaluate.py
+├── utils.py
+├── classifiers/
+│   └── random_forest/
+│       └── run_<timestamp>/
+│           ├── rf_model.pkl
+│           ├── vectorizer.pkl (if saved)
+│           └── predictions.csv
+└── data/
+    └── extractors/
+        └── parsed_data/
+```
 
 ---
 
-## 🚀 Training and Testing
+## 🚀 Usage
 
-To train the model on the SpamAssassin dataset and evaluate it:
+### 1. Train a New Model
 
 ```bash
-python main.py --mode train
+python main.py train \
+  --vectorizer-type tfidf \
+  [--use-pretrained-w2v]
 ```
 
-To test a previously trained model on the same data:
+**Options:**
+- `--vectorizer-type`: `"tfidf"` or `"word2vec"`
+- `--use-pretrained-w2v`: Flag to use Google News Word2Vec (only for `word2vec`)
 
-```bash
-python main.py --mode predict
-```
-
-Output includes:
-
-* Overall accuracy and classification report
-* Group-based accuracy breakdown
-* Sample false positives and false negatives
-* Results saved to a CSV file if `SAVE_OUTPUT` is `True`
+The trained model and vectorizer will be saved in a timestamped directory inside `classifiers/random_forest/`.
 
 ---
 
-## 📄 Predict on Extracted Email Data
-
-If you've extracted plain text emails using a tool or script (e.g., from `.mbox`), you can run predictions like this:
+### 2. Evaluate an Existing Model
 
 ```bash
-python classifiers/random_forest/predict_from_file.py
+python main.py eval \
+  --eval-dir classifiers/random_forest/run_<timestamp> \
+  --vectorizer-type tfidf \
+  [--use-pretrained-w2v] \
+  [--save-output]
 ```
 
-This script reads from:
+**Required:**
+- `--eval-dir`: Path to previously saved model directory
 
-```
-data/raw_data/phishing-2024_plaintext_output.txt
-```
+**Optional:**
+- `--save-output`: Saves a CSV of predictions + group accuracy stats
 
-Format of this file must be:
-
-```
---- Email #1 ---
-Text of email 1
-
---- Email #2 ---
-Text of email 2
-```
-
-Predictions will:
-
-* Be displayed in the console
-* Optionally saved to a CSV (if `SAVE_OUTPUT` is enabled)
-* Show 5 samples each of predicted spam and non-spam emails
+**Evaluation results include:**
+- Overall accuracy
+- Classification report
+- Per-group accuracy
+- False positives and false negatives
 
 ---
 
-## 📦 Requirements
+## 📙 Dataset Configuration
+
+Datasets and group behavior are defined directly in `main.py` via `DATASETS`:
+
+```python
+DATASETS = [
+    {
+        "path": "data/extractors/parsed_data/benign.csv",
+        "groups": {
+            "benign_group": "mixed"
+        }
+    },
+    {
+        "source": "huggingface",
+        "dataset": "talby/spamassassin",
+        "subset": "text",
+        "groups": {
+            "spam": "train",
+            "hard_ham": "eval"
+        }
+    }
+]
+```
+
+**Group Roles:**
+- `train`: Only used for training
+- `eval`: Only used for evaluation
+- `mixed`: Randomly split into train/test (80/20 default)
+
+---
+
+## 📝 Notes
+
+- All CSVs must contain columns: `text`, `label`, and `group`
+- Word2Vec support includes training from scratch or loading pre-trained embeddings
+- Outputs from evaluation are saved in the same directory as the model, unless overridden
+
+---
+
+## ✅ Requirements
 
 Install dependencies using:
 
@@ -85,26 +117,16 @@ Install dependencies using:
 pip install -r requirements.txt
 ```
 
-Includes:
-
-* `pandas`
-* `scikit-learn`
-* `nltk`
-* `gensim`
-* `bs4`
+Make sure the following libraries are included:
+- `nltk`
+- `scikit-learn`
+- `gensim`
+- `beautifulsoup4`
+- `pandas`
+- `datasets`
 
 ---
 
-## 📁 Project Structure
+## 📫 Contact
 
-```
-classifiers/random_forest/
-├── main.py                  # Train/test logic
-├── config.py                # Global configuration
-├── preprocess.py            # Text cleaning and lemmatization
-├── vectorize.py             # TF-IDF / Word2Vec vectorization
-├── model.py                 # Training and model I/O
-├── evaluate.py              # Evaluation and reporting
-├── predict_from_file.py     # Run predictions on new plain text emails
-├── run_<timestamp>/         # Output folder for each run
-```
+For questions or contributions, open an issue or contact the repo maintainer.

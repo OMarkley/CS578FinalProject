@@ -1,51 +1,71 @@
 import os
+import csv
+import re
 from email import policy
 from email.parser import BytesParser
+
 
 def extract_clean_plain_text(msg):
     for part in msg.iter_parts():
         if part.get_content_type() == 'text/plain':
-            return part.get_content().strip()
+            raw_text = part.get_content().strip()
+            cleaned_text = re.sub(r'\s+', ' ', raw_text)  # Normalize whitespace
+
+            # Remove words containing 'jose' or 'monkey' (case-insensitive)
+            filtered_words = [
+                word for word in cleaned_text.split()
+                if 'jose' not in word.lower() and 'monkey' not in word.lower()
+            ]
+            final_text = ' '.join(filtered_words)
+            return final_text
     return None
 
+
 def process_email_file(filepath, limit=100000):
-    with open(filepath, 'rb') as f:
+    with open(filepath, "rb") as f:
         raw_data = f.read()
 
     # Prepare output file path
     directory = os.path.dirname(filepath)
-    output_path = os.path.join(directory, "../parsed_data/phishing-2024_plaintext_output.txt")
+    output_path = os.path.join(directory, "../parsed_data/monkey_phishing_2024.csv")
 
-    # Split on the start of each email (but keep the split string)
-    raw_emails = raw_data.split(b'\nFrom jose@monkey.org')
+    raw_emails = raw_data.split(b"\nFrom jose@monkey.org")
     count = 0
 
-    with open(output_path, 'w', encoding='utf-8') as out_file:
+    with open(output_path, 'w', encoding='utf-8', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=['index', 'group', 'label', 'text'])
+        writer.writeheader()
+
         for i, raw_email in enumerate(raw_emails):
             if not raw_email.strip():
-                continue  # skip any empty chunks
+                continue
 
-            # Add back the first line (only if it's not the first chunk)
             if i > 0:
                 raw_email = b'From jose@monkey.org' + raw_email
 
             try:
                 msg = BytesParser(policy=policy.default).parsebytes(raw_email)
             except Exception:
-                continue  # skip parse errors
+                continue
 
             if not msg.is_multipart():
-                continue  # skip non-multipart messages
+                continue
 
             text = extract_clean_plain_text(msg)
-            if text:
+            if text and len(text.split()) >= 5:
+                writer.writerow({
+                    'index': count,  # Index starts at 0
+                    'group': 'monkey_phishing_2024',
+                    'label': 0,  # PHISHING
+                    'text': text
+                })
                 count += 1
-                out_file.write(f"\n--- Email #{count} ---\n{text}\n")
 
             if count >= limit:
                 break
 
-    print(f"Wrote {count} email(s) to: {output_path}")
+    print(f"Wrote {count} phishing email(s) to: {output_path}")
+
 
 # Run the parser
-process_email_file("data/raw_data/phishing-2024.txt")
+process_email_file("data/raw_data/monkey_phishing_2024.txt")

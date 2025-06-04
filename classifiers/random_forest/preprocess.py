@@ -4,6 +4,10 @@ from bs4 import BeautifulSoup
 from nltk import word_tokenize, pos_tag
 from nltk.corpus import stopwords, wordnet
 from nltk.stem import WordNetLemmatizer
+from bs4 import MarkupResemblesLocatorWarning
+import warnings
+
+warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
 stop_words = set(stopwords.words("english"))
 lemmatizer = WordNetLemmatizer()

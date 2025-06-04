@@ -1,0 +1,3 @@
+google word2vec
+train all data including vim subset
+tuned hyperparams

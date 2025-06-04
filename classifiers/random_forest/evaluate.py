@@ -1,6 +1,5 @@
 import pandas as pd
 from sklearn.metrics import accuracy_score, classification_report
-from config import RESULTS_PATH
 import os
 
 def evaluate_model(model, x_test_vec, y_test, x_test, df):
@@ -20,23 +19,48 @@ def evaluate_model(model, x_test_vec, y_test, x_test, df):
 
     return results_df
 
-def save_and_report(results_df, save_output=False):
-    if save_output:
-        os.makedirs(os.path.dirname(RESULTS_PATH), exist_ok=True)
-        results_df.to_csv(RESULTS_PATH, index=False)
-        print(f"\nSaved predictions to '{RESULTS_PATH}'")
+def save_summary_and_predictions(results_df, vectorizer_type, eval_dir, save_all=False):
+    os.makedirs(eval_dir, exist_ok=True)
+    summary_path = os.path.join(eval_dir, "summary.csv")
+    prediction_path = os.path.join(eval_dir, "predictions.csv")
 
     results_df["correct"] = results_df["true_label"] == results_df["predicted_label"]
 
+    # Per-group accuracy
     group_accuracy = results_df.groupby("group")["correct"].mean().reset_index(name="accuracy")
-    print("\nPer-Group Accuracy:")
-    print(group_accuracy)
+    
+    overall_accuracy = accuracy_score(results_df["true_label"], results_df["predicted_label"])
 
-    false_positives = results_df[(results_df["true_label"] == 0) & (results_df["predicted_label"] == 1)]
-    false_negatives = results_df[(results_df["true_label"] == 1) & (results_df["predicted_label"] == 0)]
+
+    # Classification report
+    report = classification_report(results_df["true_label"], results_df["predicted_label"], output_dict=True)
+    report_df = pd.DataFrame(report).transpose().reset_index().rename(columns={"index": "class"})
+
+    # Save summary with vectorizer info
+    with open(summary_path, "w", encoding="utf-8") as f:
+        f.write(f"Vectorizer Type: {vectorizer_type}\n\n")
+        f.write(f"Overall Accuracy: {overall_accuracy:.4f}\n\n")
+        f.write("Per-Group Accuracy:\n")
+        group_accuracy.to_csv(f, index=False)
+        f.write("\nClassification Report:\n")
+        report_df.to_csv(f, index=False)
+
+    print(f"\nSaved summary to '{summary_path}'")
+
+    if save_all:
+        results_df.to_csv(prediction_path, index=False)
+        print(f"Saved all predictions to '{prediction_path}'")
+
+    # Sample insights
+    false_pos = results_df[(results_df["true_label"] == 0) & (results_df["predicted_label"] == 1)]
+    false_neg = results_df[(results_df["true_label"] == 1) & (results_df["predicted_label"] == 0)]
+    correct = results_df[results_df["true_label"] == results_df["predicted_label"]]
 
     print("\nFalse Positives:")
-    print(false_positives.sample(min(5, len(false_positives)), random_state=42))
+    print(false_pos.sample(min(5, len(false_pos)), random_state=42))
 
     print("\nFalse Negatives:")
-    print(false_negatives.sample(min(5, len(false_negatives)), random_state=42))
+    print(false_neg.sample(min(5, len(false_neg)), random_state=42))
+
+    print("\nCorrect Predictions:")
+    print(correct.sample(min(5, len(correct)), random_state=42))
