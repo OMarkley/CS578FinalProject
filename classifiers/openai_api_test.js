@@ -13,7 +13,7 @@ async function classifyEmail(emailText) {
     { role: 'user', content:
       `Determine whether the following email is ‘Phishing’ or ‘Legitimate’, then give a one-sentence rationale.\n\n` +
       `---\n${emailText}\n---\n` +
-      `Answer format:\n1. Label: <Phishing|Legitimate>\n2. Rationale: <…>`
+      `Answer format:\n <Phishing|Legitimate>\n`
     }
   ];
 
