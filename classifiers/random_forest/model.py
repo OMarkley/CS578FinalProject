@@ -12,7 +12,9 @@ def train_model(x_train_vec, y_train, use_grid_search=False):
 
     param_grid = {
         'n_estimators': [50, 100, 200, 300],
-        'max_depth': [5, 10, 15, 20]
+        'max_depth': [5, 10, 15, 20, None],
+        # 'min_samples_split': [2, 5, 10],
+        # 'min_samples_leaf': [1, 2, 5]
     }
 
     base_model = RandomForestClassifier(random_state=42)
@@ -22,13 +24,18 @@ def train_model(x_train_vec, y_train, use_grid_search=False):
         scoring='accuracy',
         cv=3,
         n_jobs=-1,
-        verbose=1,
+        verbose=2,
         return_train_score=True
     )
     grid_search.fit(x_train_vec, y_train)
 
     print("[INFO] Best parameters:", grid_search.best_params_)
     print("[INFO] Best cross-validation score:", grid_search.best_score_)
+    
+    # Save full cv results
+    full_results = pd.DataFrame(grid_search.cv_results_)
+    full_results.to_csv("full_grid_search_results.csv", index=False)
+    print("[INFO] Saved full grid search results.")
 
     return grid_search.best_estimator_, pd.DataFrame(grid_search.cv_results_)
 
